@@ -1,0 +1,44 @@
+# An explicit project name. Without it Compose names the project after the directory - "frontend"
+# on the VPS - and would treat another stack started from a directory of that name as this one,
+# recreating its containers.
+name: fr-task-frontend
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    image: fr-task-web:latest
+    container_name: fr-task-web
+    restart: unless-stopped
+    # A hard ceiling keeps this stack from squeezing whatever else runs on the server.
+    mem_limit: 384m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Server-side proxy target - changing this needs no rebuild.
+      # Reaches the API container by name over the shared network.
+      BACKEND_URL: ${BACKEND_URL:-http://fr-task-api:8080}
+    ports:
+      # Bound to loopback by default - only the reverse proxy on this host may reach it.
+      - "${BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-6071}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - task-web
+      - shared
+
+networks:
+  task-web:
+    name: fr-task-web-net
+    driver: bridge
+  shared:
+    name: ${SHARED_NETWORK:-fr-task-shared}
+    external: true
