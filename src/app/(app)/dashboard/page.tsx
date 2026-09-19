@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, CalendarClock } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -11,7 +11,8 @@ import { TaskDrawer } from '@/components/task/task-detail';
 import { Badge, Card, CardHeader, PageLoader, ProgressBar } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useDashboard } from '@/lib/queries';
-import { PRIORITY_META, TONE, TYPE_META, cn, dueLabel, fromNow, greeting, progress } from '@/lib/utils';
+import { KIND_META, countdown, daysUntil } from '@/lib/spaces';
+import { PRIORITY_META, TONE, TYPE_META, cn, dueLabel, formatDate, fromNow, greeting, progress } from '@/lib/utils';
 
 function Stat({ label, value, href, tone }: { label: string; value: number; href: string; tone?: 'alert' }) {
   return (
@@ -69,11 +70,12 @@ export default function DashboardPage() {
                 <Stat label="Open tasks" value={data.openTasks} href="/tasks" />
                 <Stat label="Overdue" value={data.overdueTasks} href="/tasks" tone="alert" />
                 <Stat label="Boards" value={data.totalBoards} href="/boards" />
-                <Stat label="Platforms" value={data.totalPlatforms} href="/platforms" />
+                <Stat label="Spaces" value={data.totalPlatforms} href="/spaces" />
               </div>
             </Card>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_1fr]">
+            {/* minmax(0,…): a bare fr track grows to its longest unbreakable line and pushes the rail off-screen */}
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
               <div className="space-y-6">
                 {/* next up */}
                 <Card className="overflow-hidden">
@@ -183,7 +185,7 @@ export default function DashboardPage() {
                             <p className="truncate text-[14px] text-ink-900 group-hover:text-brand-600">{board.name}</p>
                           </div>
                           <p className="mt-1 font-mono text-[11px] uppercase tracking-wide text-ink-400">
-                            {board.platformName} · {board.boardKey}
+                            {board.platformName ? `${board.platformName} · ${board.boardKey}` : board.boardKey}
                           </p>
                           <ProgressBar value={progress(board.doneCount, board.taskCount)} className="mt-4" />
                           <p className="mt-2 font-mono text-[11px] text-ink-500">
@@ -199,6 +201,62 @@ export default function DashboardPage() {
 
               {/* right rail */}
               <div className="space-y-6">
+                <Card className="overflow-hidden">
+                  <CardHeader
+                    title="Goals"
+                    icon={<Target className="h-3.5 w-3.5 text-brand-600" />}
+                    action={
+                      <Link href="/spaces" className="link-underline text-[12.5px] text-ink-500 hover:text-ink-900">
+                        All spaces
+                      </Link>
+                    }
+                  />
+                  {(data.upcomingGoals ?? []).length === 0 ? (
+                    <p className="px-5 py-8 text-center text-[13px] leading-relaxed text-ink-400">
+                      No upcoming goals. Give a space a date ahead - an exam, an offer deadline - and its countdown
+                      shows here.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-ink-100">
+                      {data.upcomingGoals.map((space) => {
+                        const meta = KIND_META[space.kind ?? 'PLATFORM'];
+                        const Icon = meta.icon;
+                        const soon = (daysUntil(space.targetDate) ?? 99) <= 14;
+                        return (
+                          <li key={space.id}>
+                            <Link
+                              href="/spaces"
+                              className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-ink-100/50"
+                            >
+                              <Icon className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} style={{ color: space.color }} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline justify-between gap-3">
+                                  <p className="truncate text-[13.5px] text-ink-900">{space.name}</p>
+                                  <span
+                                    className={cn(
+                                      'shrink-0 font-mono text-[11.5px]',
+                                      soon ? 'text-amber-700 dark:text-amber-400' : 'text-ink-500',
+                                    )}
+                                  >
+                                    {countdown(space.targetDate)}
+                                  </span>
+                                </div>
+                                <p className="mt-0.5 truncate text-[12px] text-ink-500">
+                                  {space.goal ? `${space.goal} · ` : ''}
+                                  {meta.dateLabel} {formatDate(space.targetDate, 'd MMM')}
+                                </p>
+                                {space.taskCount > 0 && (
+                                  <ProgressBar value={progress(space.doneCount, space.taskCount)} className="mt-2" />
+                                )}
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </Card>
+
                 <Card className="overflow-hidden">
                   <CardHeader title="Due this week" icon={<CalendarClock className="h-3.5 w-3.5 text-brand-600" />} />
                   {data.upcomingDeadlines.length === 0 ? (

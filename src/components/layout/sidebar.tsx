@@ -24,7 +24,7 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'Tasks', icon: ListChecks, exact: true },
   { href: '/boards', label: 'Boards', icon: SquareKanban },
-  { href: '/platforms', label: 'Platforms', icon: Layers },
+  { href: '/spaces', label: 'Spaces', icon: Layers },
   { href: '/architecture', label: 'Architecture', icon: Network },
 ];
 

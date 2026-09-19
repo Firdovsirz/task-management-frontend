@@ -21,11 +21,31 @@ import type {
   PageResponse,
   Platform,
   Priority,
+  SpaceKind,
+  SpaceTemplate,
   TaskCard,
   TaskDetail,
   TaskType,
   User,
 } from './types';
+
+/**
+ * A new board can reuse the key of one deleted a moment ago; whatever is still cached under that
+ * key (the old board, its cards) must not be shown for it. Nothing is watching the key yet here.
+ */
+function forgetBoardKey(queryClient: ReturnType<typeof useQueryClient>, boardKey: string) {
+  const key = boardKey.trim().toUpperCase();
+  queryClient.removeQueries({ queryKey: ['board', key] });
+  queryClient.removeQueries({ queryKey: ['kanban', key] });
+  queryClient.removeQueries({ queryKey: ['board-activity', key] });
+  // and the old board's tasks, cached by key (KEY-1, KEY-2 ...) for the task drawer
+  queryClient.removeQueries({
+    predicate: (query) =>
+      query.queryKey[0] === 'task' &&
+      typeof query.queryKey[1] === 'string' &&
+      query.queryKey[1].toUpperCase().startsWith(`${key}-`),
+  });
+}
 
 /* ------------------------------------------------------------------ dashboard */
 
@@ -36,7 +56,7 @@ export function useDashboard() {
   });
 }
 
-/* ------------------------------------------------------------------ platforms */
+/* ------------------------------------------------------------------ spaces (platforms in the API) */
 
 export function usePlatforms() {
   return useQuery({
@@ -52,6 +72,11 @@ export interface PlatformPayload {
   color?: string;
   icon?: string;
   active?: boolean;
+  kind?: SpaceKind;
+  /** Sent as an empty string to clear it. */
+  goal?: string;
+  /** yyyy-MM-dd, or null to clear it. */
+  targetDate?: string | null;
 }
 
 export function useSavePlatform() {
@@ -63,6 +88,43 @@ export function useSavePlatform() {
         : (await api.post<Platform>('/platforms', payload)).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platforms'] });
+      // boards show their space's kind, and a board page its goal and countdown
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+      queryClient.invalidateQueries({ queryKey: ['board'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useSpaceTemplates() {
+  return useQuery({
+    queryKey: ['space-templates'],
+    queryFn: async () => (await api.get<SpaceTemplate[]>('/platforms/templates')).data,
+    staleTime: Infinity,
+  });
+}
+
+export interface FromTemplatePayload {
+  template: string;
+  name: string;
+  code: string;
+  boardKey: string;
+  goal?: string;
+  targetDate?: string | null;
+  color?: string;
+}
+
+/** One call makes the space, its board and the starter tasks - or nothing, if any part clashes. */
+export function useCreateFromTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: FromTemplatePayload) =>
+      (await api.post<Platform>('/platforms/from-template', payload)).data,
+    onSuccess: (_, payload) => {
+      forgetBoardKey(queryClient, payload.boardKey);
+      queryClient.invalidateQueries({ queryKey: ['platforms'] });
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -133,14 +195,16 @@ export interface BoardPayload {
   boardKey: string;
   description?: string;
   color?: string;
-  platformId: number;
+  /** The space, or null for a board of its own. */
+  platformId: number | null;
 }
 
 export function useCreateBoard() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: BoardPayload) => (await api.post<BoardDetail>('/boards', payload)).data,
-    onSuccess: () => {
+    onSuccess: (board) => {
+      forgetBoardKey(queryClient, board.boardKey);
       queryClient.invalidateQueries({ queryKey: ['boards'] });
       queryClient.invalidateQueries({ queryKey: ['platforms'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -157,6 +221,9 @@ export function useUpdateBoard() {
       queryClient.invalidateQueries({ queryKey: ['boards'] });
       queryClient.invalidateQueries({ queryKey: ['board', board.boardKey] });
       queryClient.invalidateQueries({ queryKey: ['kanban', board.boardKey] });
+      // moving a board in or out of a space changes both spaces' counts
+      queryClient.invalidateQueries({ queryKey: ['platforms'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -275,6 +342,8 @@ function invalidateTaskViews(queryClient: ReturnType<typeof useQueryClient>, tas
   queryClient.invalidateQueries({ queryKey: ['tasks'] });
   queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   queryClient.invalidateQueries({ queryKey: ['boards'] });
+  // a space shows its task count and how many are done
+  queryClient.invalidateQueries({ queryKey: ['platforms'] });
   if (taskKey) {
     queryClient.invalidateQueries({ queryKey: ['task', taskKey] });
     queryClient.invalidateQueries({ queryKey: ['activity', taskKey] });

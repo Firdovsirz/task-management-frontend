@@ -22,12 +22,12 @@ It is the AzTU Kanban frontend rebuilt for one person and dressed in the identit
 | Route | Purpose |
 | --- | --- |
 | `/login` | Sign in — the workspace has a single owner account |
-| `/dashboard` | Greeting, open/overdue counts, next up, deadlines, activity |
+| `/dashboard` | Greeting, open/overdue counts, next up, goals with countdowns, deadlines, activity |
 | `/tasks` | Every task, with search and filters |
 | `/tasks/[key]` | Full-page task view (the target of e-mail links) |
-| `/boards` | Every board, filtered by platform |
+| `/boards` | Every board, filtered by space or "No space" (a board can stand on its own) |
 | `/boards/[key]` | The kanban board itself |
-| `/platforms` | Areas of work and their boards |
+| `/spaces` | Products, exams like IELTS, a job hunt: kind, goal, countdown, progress, and templates that set up a board and a starter plan (`/platforms` redirects here) |
 | `/architecture`, `/architecture/[id]` | Diagrams and the canvas |
 | `/profile` | Name, e-mail reminders, theme, password |
 

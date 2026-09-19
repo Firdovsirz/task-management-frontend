@@ -28,7 +28,7 @@ function nextPath(next: string | null): string {
 }
 
 const HIGHLIGHTS = [
-  ['Boards', 'Platforms, boards and columns shaped around how I actually work'],
+  ['Spaces', 'Products, exams like IELTS, a job hunt - each with its own boards, goal and date'],
   ['Deadlines', 'A morning reminder for anything due today or tomorrow'],
   ['Architecture', 'Components, connections and the decisions behind them'],
 ];

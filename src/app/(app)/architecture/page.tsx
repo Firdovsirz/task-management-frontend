@@ -61,7 +61,7 @@ export default function ArchitecturePage() {
               />
             </div>
             <Select value={platformId} onChange={(event) => setPlatformId(event.target.value)} className="w-full sm:w-56">
-              <option value="">All platforms</option>
+              <option value="">All spaces</option>
               {platforms.map((platform) => (
                 <option key={platform.id} value={platform.id}>
                   {platform.name}

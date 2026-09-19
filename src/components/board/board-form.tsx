@@ -6,6 +6,7 @@ import { apiError } from '@/lib/api';
 import { useCreateBoard, usePlatforms, useUpdateBoard } from '@/lib/queries';
 import type { BoardDetail, BoardSummary } from '@/lib/types';
 import { BOARD_COLORS } from '@/lib/utils';
+import { latinLetters } from '@/lib/spaces';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { Modal } from '@/components/ui/overlays';
 import { ColorPicker } from '@/components/ui/color-picker';
@@ -28,6 +29,8 @@ export function BoardForm({
 
   const [name, setName] = useState('');
   const [boardKey, setBoardKey] = useState('');
+  // the key follows the name until it is typed in by hand
+  const [keyEdited, setKeyEdited] = useState(false);
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(BOARD_COLORS[0]);
   const [platformId, setPlatformId] = useState('');
@@ -35,6 +38,7 @@ export function BoardForm({
 
   useEffect(() => {
     if (!open) return;
+    setKeyEdited(false);
     if (board) {
       const detail = board as Partial<BoardDetail> & Partial<BoardSummary>;
       setName(board.name);
@@ -49,18 +53,14 @@ export function BoardForm({
       setBoardKey('');
       setDescription('');
       setColor(BOARD_COLORS[0]);
-      setPlatformId(defaultPlatformId ? String(defaultPlatformId) : String(platforms[0]?.id ?? ''));
+      // opened from a space it goes there; otherwise it starts out on its own
+      setPlatformId(defaultPlatformId ? String(defaultPlatformId) : '');
       setArchived(false);
     }
-  }, [open, board, defaultPlatformId, platforms]);
+  }, [open, board, defaultPlatformId]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!platformId) {
-      toast.error('Pick a platform first.');
-      return;
-    }
-
     try {
       if (board && 'id' in board) {
         await updateBoard.mutateAsync({
@@ -69,7 +69,7 @@ export function BoardForm({
             name: name.trim(),
             description: description.trim() || undefined,
             color,
-            platformId: Number(platformId),
+            platformId: platformId ? Number(platformId) : null,
             archived,
           },
         });
@@ -80,7 +80,7 @@ export function BoardForm({
           boardKey: boardKey.trim().toUpperCase(),
           description: description.trim() || undefined,
           color,
-          platformId: Number(platformId),
+          platformId: platformId ? Number(platformId) : null,
         });
         toast.success('Board created with the default kanban columns');
       }
@@ -117,16 +117,12 @@ export function BoardForm({
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
-                if (!board && !boardKey) {
-                  const generated = event.target.value
-                    .replace(/[^a-zA-Z ]/g, '')
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((word) => word[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 5);
-                  setBoardKey(generated);
+                if (!board && !keyEdited) {
+                  const words = latinLetters(event.target.value).split(' ').filter(Boolean);
+                  // initials for several words; one word would give a single letter, and a key needs two
+                  const generated = words.length > 1 ? words.map((word) => word[0]).join('') : (words[0] ?? '').slice(0, 4);
+                  // under two letters there is nothing usable yet - leave it empty so the form asks
+                  setBoardKey(generated.length >= 2 ? generated.toUpperCase().slice(0, 5) : '');
                 }
               }}
               placeholder="Portfolio website"
@@ -137,8 +133,13 @@ export function BoardForm({
           <Field label="Key" required hint={board ? 'Fixed' : 'Used in task ids'}>
             <Input
               value={boardKey}
-              onChange={(event) => setBoardKey(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+              onChange={(event) => {
+                setKeyEdited(true);
+                setBoardKey(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+              }}
               placeholder="WEB"
+              pattern="[A-Za-z][A-Za-z0-9]{1,9}"
+              title="2-10 letters and digits, starting with a letter"
               maxLength={10}
               disabled={Boolean(board)}
               required
@@ -157,9 +158,9 @@ export function BoardForm({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Platform" required>
-            <Select value={platformId} onChange={(event) => setPlatformId(event.target.value)} required>
-              <option value="">Select a platform…</option>
+          <Field label="Space" hint="Optional - a board can stand on its own">
+            <Select value={platformId} onChange={(event) => setPlatformId(event.target.value)}>
+              <option value="">No space</option>
               {platforms.map((platform) => (
                 <option key={platform.id} value={platform.id}>
                   {platform.name} ({platform.code})

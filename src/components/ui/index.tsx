@@ -78,6 +78,7 @@ export function Field({
   hint,
   error,
   required,
+  htmlFor,
   children,
   className,
 }: {
@@ -85,13 +86,15 @@ export function Field({
   hint?: string;
   error?: string;
   required?: boolean;
+  /** The id of the control, so the label names it and clicking the label focuses it. */
+  htmlFor?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn('space-y-1.5', className)}>
       {label && (
-        <label className="block text-[13px] text-ink-700">
+        <label htmlFor={htmlFor} className="block text-[13px] text-ink-700">
           {label}
           {required && <span className="ml-0.5 text-brand-600">*</span>}
         </label>

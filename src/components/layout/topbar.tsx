@@ -41,7 +41,11 @@ export function Topbar({
 
       <div className="min-w-0 flex-1">
         <h1 className="serif truncate text-[21px] leading-tight text-ink-900">{title}</h1>
-        {subtitle && <p className="truncate text-[12.5px] text-ink-500">{subtitle}</p>}
+        {subtitle && (
+          <p className="truncate text-[12.5px] text-ink-500" title={subtitle}>
+            {subtitle}
+          </p>
+        )}
       </div>
 
       <form onSubmit={onSearch} className="relative hidden md:block">

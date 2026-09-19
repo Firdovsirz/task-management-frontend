@@ -4,10 +4,10 @@ import { Layers, Network, SquareKanban } from 'lucide-react';
 import { useState } from 'react';
 import { DiagramForm } from '@/components/architecture/diagram-form';
 import { BoardForm } from '@/components/board/board-form';
-import { PlatformForm } from '@/components/platform/platform-form';
+import { SpaceForm } from '@/components/space/space-form';
 import { Button } from '@/components/ui';
 
-type Creating = 'platform' | 'board' | 'diagram' | null;
+type Creating = 'space' | 'board' | 'diagram' | null;
 
 /** The dashboard's "start something" row - each also lives on its own page. */
 export function QuickCreate() {
@@ -20,9 +20,9 @@ export function QuickCreate() {
           <SquareKanban className="h-3.5 w-3.5" />
           New board
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => setCreating('platform')}>
+        <Button variant="secondary" size="sm" onClick={() => setCreating('space')}>
           <Layers className="h-3.5 w-3.5" />
-          New platform
+          New space
         </Button>
         <Button variant="secondary" size="sm" onClick={() => setCreating('diagram')}>
           <Network className="h-3.5 w-3.5" />
@@ -30,7 +30,7 @@ export function QuickCreate() {
         </Button>
       </div>
 
-      <PlatformForm open={creating === 'platform'} onClose={() => setCreating(null)} />
+      <SpaceForm open={creating === 'space'} onClose={() => setCreating(null)} />
       <BoardForm open={creating === 'board'} onClose={() => setCreating(null)} />
       <DiagramForm open={creating === 'diagram'} onClose={() => setCreating(null)} />
     </>

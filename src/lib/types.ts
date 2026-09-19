@@ -35,6 +35,13 @@ export interface LoginResponse {
   user: User;
 }
 
+/** What a space is for. Spaces made before kinds existed come back as PLATFORM. */
+export type SpaceKind = 'PLATFORM' | 'STUDY' | 'CAREER' | 'RESEARCH' | 'PERSONAL' | 'OTHER';
+
+/**
+ * A space - a product, an exam like IELTS, a job hunt - that groups boards and diagrams.
+ * The API still calls it a platform, so the type and the endpoints keep that name.
+ */
 export interface Platform {
   id: number;
   name: string;
@@ -43,9 +50,34 @@ export interface Platform {
   color: string;
   icon: string;
   active: boolean;
+  kind: SpaceKind;
+  /** What done looks like, e.g. "Overall band 7.0". */
+  goal?: string | null;
+  /** yyyy-MM-dd: the exam, the deadline, the date the goal is due. */
+  targetDate?: string | null;
   boardCount: number;
   taskCount: number;
+  doneCount: number;
   createdAt: string;
+}
+
+/** A ready-made space: the board, columns and starter tasks it will create. */
+export interface SpaceTemplate {
+  key: string;
+  name: string;
+  kind: SpaceKind;
+  description: string;
+  code: string;
+  color: string;
+  goal: string;
+  boardName: string;
+  boardKey: string;
+  columns: string[];
+  taskCount: number;
+  /** How many starter tasks are dated back from the target date. */
+  datedTaskCount: number;
+  /** What the target date means for this template, e.g. "Exam date". */
+  targetDateLabel: string;
 }
 
 export interface BoardColumnDto {
@@ -66,6 +98,7 @@ export interface BoardSummary {
   platformId?: number | null;
   platformName?: string | null;
   platformColor?: string | null;
+  platformKind?: SpaceKind | null;
   taskCount: number;
   doneCount: number;
   archived: boolean;
@@ -188,6 +221,8 @@ export interface DashboardStats {
   upcomingDeadlines: TaskCard[];
   recentActivity: Activity[];
   boards: BoardSummary[];
+  /** Active spaces whose target date is today or later, nearest first. */
+  upcomingGoals: Platform[];
 }
 
 export interface PageResponse<T> {

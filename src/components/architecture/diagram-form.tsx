@@ -81,7 +81,7 @@ export function DiagramForm({
           <Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Platform">
+          <Field label="Space">
             <Select value={platformId} onChange={(event) => setPlatformId(event.target.value)}>
               {platforms.map((platform) => (
                 <option key={platform.id} value={platform.id}>

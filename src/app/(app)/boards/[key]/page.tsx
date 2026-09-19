@@ -11,8 +11,22 @@ import { TaskDrawer } from '@/components/task/task-detail';
 import { TaskForm } from '@/components/task/task-form';
 import { Button, EmptyState, Input, PageLoader, Select } from '@/components/ui';
 import { useBoard, useKanban } from '@/lib/queries';
-import type { Priority, TaskType } from '@/lib/types';
-import { PRIORITIES, PRIORITY_META, TASK_TYPES, TYPE_META, cn } from '@/lib/utils';
+import { KIND_META, countdown } from '@/lib/spaces';
+import type { BoardDetail, Priority, TaskType } from '@/lib/types';
+import { PRIORITIES, PRIORITY_META, TASK_TYPES, TYPE_META, cn, formatDate, plural } from '@/lib/utils';
+
+/**
+ * "Exam date 12 Nov, in 54 days · IELTS · 13 tasks" - the space's date stays in view on its boards,
+ * and comes first so a phone-width header cuts the space name rather than the countdown.
+ * A board of its own is just "13 tasks".
+ */
+function boardSubtitle(board: BoardDetail) {
+  const space = board.platform;
+  const when = countdown(space?.targetDate);
+  const date =
+    space && when ? `${KIND_META[space.kind ?? 'PLATFORM'].dateLabel} ${formatDate(space.targetDate, 'd MMM')}, ${when}` : null;
+  return [date, space?.name, plural(board.taskCount, 'task')].filter(Boolean).join(' · ');
+}
 
 export default function BoardPage() {
   const params = useParams<{ key: string }>();
@@ -59,7 +73,7 @@ export default function BoardPage() {
     <>
       <Topbar
         title={board?.name ?? boardKey}
-        subtitle={board ? `${board.platform?.name ?? 'Platform'} · ${board.taskCount} tasks` : undefined}
+        subtitle={board ? boardSubtitle(board) : undefined}
         onCreateTask={board ? () => { setCreatingIn(null); setCreating(true); } : undefined}
         actions={
           <div className="flex items-center gap-1">

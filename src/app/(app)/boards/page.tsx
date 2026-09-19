@@ -22,24 +22,26 @@ export default function BoardsPage() {
   const deleteBoard = useDeleteBoard();
 
   const { data: platforms = [] } = usePlatforms();
-  const { data: boards, isLoading } = useBoards(platformId ? Number(platformId) : null);
+  // '' is every board, 'none' the boards outside any space, anything else a space id
+  const { data: boards, isLoading } = useBoards(platformId && platformId !== 'none' ? Number(platformId) : null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return boards ?? [];
-    return (boards ?? []).filter(
+    const inScope = platformId === 'none' ? (boards ?? []).filter((board) => !board.platformId) : (boards ?? []);
+    if (!term) return inScope;
+    return inScope.filter(
       (board) =>
         board.name.toLowerCase().includes(term) ||
         board.boardKey.toLowerCase().includes(term) ||
         (board.platformName ?? '').toLowerCase().includes(term),
     );
-  }, [boards, search]);
+  }, [boards, search, platformId]);
 
   return (
     <>
       <Topbar
         title="Boards"
-        subtitle="Every board, grouped by the platform it belongs to"
+        subtitle="Every board, in a space or on its own"
         actions={
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" />
@@ -65,7 +67,8 @@ export default function BoardsPage() {
               onChange={(event) => setPlatformId(event.target.value)}
               className="w-full sm:w-56"
             >
-              <option value="">All platforms</option>
+              <option value="">All boards</option>
+              <option value="none">No space</option>
               {platforms.map((platform) => (
                 <option key={platform.id} value={platform.id}>
                   {platform.name}

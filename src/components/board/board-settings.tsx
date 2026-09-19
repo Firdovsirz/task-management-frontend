@@ -118,7 +118,7 @@ export function BoardSettings({
               <div>
                 <h3 className="eyebrow">General</h3>
                 <p className="mt-1 text-[13px] text-ink-600">
-                  {board.platform?.name} · key <span className="font-mono">{board.boardKey}</span>
+                  {board.platform?.name ?? 'No space'} · key <span className="font-mono">{board.boardKey}</span>
                 </p>
               </div>
               <Button variant="secondary" size="sm" onClick={onEditBoard}>
